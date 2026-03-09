@@ -1,119 +1,104 @@
 # Deployment Guide
 
-This project can be deployed in two ways:
+This repo is set up for:
 
+- `backend/` on an Ubuntu EC2 instance
 - `frontend/` on Vercel
-- `backend/` on either Vercel or an Ubuntu EC2 instance behind Nginx
 
-## 1. Deploy the backend on Vercel
+## 1. Deploy the backend on EC2
 
-Vercel now supports FastAPI directly with its Python runtime:
+### Launch the instance
 
-- https://vercel.com/docs/frameworks/backend/fastapi
-- https://vercel.com/docs/functions/runtimes/python
+Create an Ubuntu EC2 instance.
 
-### Important limitation for this repo
-
-This backend currently uses SQLite in `backend/tasks.db`.
-
-Vercel Functions run on a read-only filesystem with temporary writable `/tmp` storage only. That means SQLite is not a good production choice on Vercel because writes will not persist reliably across invocations and deployments.
-
-Use one of these options:
-
-- Recommended: move the backend to PostgreSQL or another external database before using Vercel in production
-- Demo only: set `DATABASE_URL=/tmp/tasks.db` and accept that data is temporary
-
-### Minimal repo shape for Vercel
-
-This repo includes `backend/app.py` so Vercel can detect the FastAPI application from the backend project root.
-
-### Create the Vercel backend project
-
-1. Push this repo to GitHub.
-2. In Vercel, choose `Add New Project`.
-3. Import the same repo again as a second Vercel project.
-4. Set the **Root Directory** to `backend`.
-
-### Configure the project
-
-Vercel should auto-detect the FastAPI app. If you are prompted for settings:
-
-- Framework Preset: leave on auto-detect, or choose `Other`
-- Install Command: leave empty
-- Build Command: leave empty
-
-### Add backend environment variables
-
-For a temporary demo on Vercel:
-
-```env
-APP_ENV=production
-DEBUG=false
-DATABASE_URL=/tmp/tasks.db
-CORS_ORIGINS=https://task-manager-three-rouge-66.vercel.app
-```
-
-For production, replace `DATABASE_URL` with your external database connection settings after you migrate off SQLite.
-
-### Deploy and test
-
-After deployment, note the backend domain from Vercel, for example:
-
-```text
-https://task-manager-api-example.vercel.app
-```
-
-Then test:
-
-- `https://YOUR_BACKEND_DOMAIN/health`
-- `https://YOUR_BACKEND_DOMAIN/api/tasks`
-
-## 2. Deploy the backend on EC2
-
-### Create the instance
-
-Use an Ubuntu EC2 instance and attach a security group with:
+In the security group, allow:
 
 - `22` from your IP only
 - `80` from `0.0.0.0/0`
-- `443` from `0.0.0.0/0`
+- `8000` only if you want to test Uvicorn directly before Nginx
 
-AWS documents security groups for EC2 here:
-
-- https://docs.aws.amazon.com/console/ec2/security-groups
-
-### Connect and install packages
+### Connect to the server
 
 ```bash
 ssh -i /path/to/key.pem ubuntu@YOUR_EC2_PUBLIC_IP
-sudo apt update && sudo apt upgrade -y
-sudo apt install -y python3-venv python3-pip nginx
 ```
 
-### Copy the backend to the server
-
-Upload or clone the repo, then:
+### Install required packages
 
 ```bash
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y git python3-venv python3-pip nginx
+```
+
+### Copy the project to EC2
+
+If the repo is on GitHub:
+
+```bash
+cd /home/ubuntu
+git clone YOUR_GITHUB_REPO_URL taskmanager
 cd /home/ubuntu/taskmanager/backend
+```
+
+If you already uploaded the repo manually, just go to the backend folder.
+
+### Create the virtual environment
+
+```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env
 ```
 
-Edit `.env` and set production values:
+### Create the backend environment file
+
+```bash
+cp .env.example .env
+nano .env
+```
+
+Use:
 
 ```env
+APP_NAME=Task Manager API
 APP_ENV=production
 DEBUG=false
 DATABASE_URL=tasks.db
-CORS_ORIGINS=https://YOUR_VERCEL_DOMAIN.vercel.app,https://YOUR_CUSTOM_FRONTEND_DOMAIN
+CORS_ORIGINS=https://YOUR_VERCEL_PROJECT.vercel.app
 ```
 
-### Run FastAPI as a service
+If you later use a custom frontend domain, add it too, comma-separated.
 
-Copy the included systemd unit:
+### Test FastAPI manually
+
+From `/home/ubuntu/taskmanager/backend`:
+
+```bash
+source .venv/bin/activate
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+Open:
+
+```text
+http://YOUR_EC2_PUBLIC_IP:8000/health
+```
+
+If it works, stop it with `Ctrl+C`.
+
+### Run FastAPI with systemd
+
+This repo includes a ready service file at:
+
+- `deploy/ec2/taskmanager-api.service`
+
+It assumes your backend is located at:
+
+- `/home/ubuntu/taskmanager/backend`
+
+If your EC2 path is different, edit the file before copying it.
+
+Install the service:
 
 ```bash
 sudo cp /home/ubuntu/taskmanager/deploy/ec2/taskmanager-api.service /etc/systemd/system/taskmanager-api.service
@@ -123,79 +108,107 @@ sudo systemctl start taskmanager-api
 sudo systemctl status taskmanager-api
 ```
 
-### Put Nginx in front of Uvicorn
+### Put Nginx in front of FastAPI
 
-Open the included config at `deploy/ec2/nginx-taskmanager-api.conf` and replace:
+Because you are not using a backend domain, use a default Nginx server config.
 
-- `api.example.com` with your real API domain
+Create `/etc/nginx/sites-available/taskmanager-api` with:
 
-Then install it:
+```nginx
+server {
+    listen 80 default_server;
+    server_name _;
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+Enable it:
 
 ```bash
-sudo cp /home/ubuntu/taskmanager/deploy/ec2/nginx-taskmanager-api.conf /etc/nginx/sites-available/taskmanager-api
 sudo ln -s /etc/nginx/sites-available/taskmanager-api /etc/nginx/sites-enabled/taskmanager-api
 sudo nginx -t
 sudo systemctl restart nginx
 ```
 
-### Add HTTPS
+Now test:
 
-If your domain already points to the EC2 public IP:
-
-```bash
-sudo apt install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d api.example.com
+```text
+http://YOUR_EC2_PUBLIC_IP/health
 ```
 
-FastAPI’s deployment guidance is here:
+### Useful backend checks
 
-- https://fastapi.tiangolo.com/deployment/
+```bash
+sudo systemctl status taskmanager-api
+sudo journalctl -u taskmanager-api -n 100 --no-pager
+sudo systemctl status nginx
+```
 
-## 3. Deploy the frontend on Vercel
+## 2. Deploy the frontend on Vercel
 
-Vercel’s current Vite deployment docs say Vite projects can deploy directly with Vercel and support environment variables at build time:
+### Push the repo to GitHub
 
-- https://vercel.com/docs/frameworks/frontend/vite
+Vercel will deploy from GitHub, so push the latest changes first.
 
-### Import the repo
+### Create the Vercel project
 
-1. Push this repo to GitHub.
-2. In Vercel, choose `Add New Project`.
-3. Import the repo.
+1. Open Vercel.
+2. Choose `Add New Project`.
+3. Import your GitHub repo.
 4. Set the **Root Directory** to `frontend`.
 
-### Configure the build
+### Build settings
 
-Use these values if Vercel does not auto-detect them:
+If Vercel does not auto-detect them, use:
 
 - Framework Preset: `Vite`
 - Build Command: `npm run build`
 - Output Directory: `dist`
 
-### Add the frontend environment variable
+### Add environment variable
 
-In Vercel project settings, add:
+In the Vercel project settings, add:
 
 ```env
-VITE_API_URL=https://api.example.com
+VITE_API_URL=http://YOUR_EC2_PUBLIC_IP
 ```
 
-Use the same API domain you configured on EC2 or Vercel.
+Then redeploy.
 
-### Redeploy
+## 3. Important limitation
 
-After the env var is saved, trigger a new deployment in Vercel.
+Your frontend on Vercel will be served over `https`.
+
+If `VITE_API_URL` points to `http://YOUR_EC2_PUBLIC_IP`, the browser may block requests as mixed content.
+
+That means:
+
+- EC2 deployment itself is fine
+- frontend and backend integration may fail in the browser without HTTPS on the backend
+
+The clean fix is to give the backend a domain and enable HTTPS later.
 
 ## 4. Final checks
 
 After both are live:
 
-1. Open the frontend URL from Vercel.
-2. Create a task.
-3. Confirm the request reaches `https://api.example.com/api/tasks`.
-4. If the browser blocks requests, re-check `CORS_ORIGINS` on the backend deployment.
+1. Open the backend health endpoint:
+   `http://YOUR_EC2_PUBLIC_IP/health`
+2. Open the Vercel frontend URL.
+3. Try creating a task.
+4. If the frontend cannot reach the backend, the likely cause is browser mixed-content blocking or `CORS_ORIGINS` mismatch.
 
 ## Notes
 
-- Vercel rewrites are documented here if you later want to proxy `/api` through the frontend domain instead of using `VITE_API_URL`: https://vercel.com/docs/rewrites
-- SQLite is fine for a small personal project on one EC2 instance. If you expect concurrent writes or multiple backend instances, move to PostgreSQL.
+- SQLite is acceptable for a small single-instance EC2 deployment.
+- If you later move to multiple backend instances or heavier usage, switch to PostgreSQL.
+- FastAPI deployment docs: https://fastapi.tiangolo.com/deployment/
+- Vercel Vite docs: https://vercel.com/docs/frameworks/frontend/vite
