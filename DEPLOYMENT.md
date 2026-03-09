@@ -25,10 +25,7 @@ Use one of these options:
 
 ### Minimal repo shape for Vercel
 
-This repo includes:
-
-- `backend/index.py` as the Vercel entrypoint
-- `backend/vercel.json` to route all requests into the FastAPI app
+This repo includes `backend/app.py` so Vercel can detect the FastAPI application from the backend project root.
 
 ### Create the Vercel backend project
 
