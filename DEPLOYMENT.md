@@ -1,11 +1,74 @@
 # Deployment Guide
 
-This project is set up for:
+This project can be deployed in two ways:
 
 - `frontend/` on Vercel
-- `backend/` on an Ubuntu EC2 instance behind Nginx
+- `backend/` on either Vercel or an Ubuntu EC2 instance behind Nginx
 
-## 1. Deploy the backend on EC2
+## 1. Deploy the backend on Vercel
+
+Vercel now supports FastAPI directly with its Python runtime:
+
+- https://vercel.com/docs/frameworks/backend/fastapi
+- https://vercel.com/docs/functions/runtimes/python
+
+### Important limitation for this repo
+
+This backend currently uses SQLite in `backend/tasks.db`.
+
+Vercel Functions run on a read-only filesystem with temporary writable `/tmp` storage only. That means SQLite is not a good production choice on Vercel because writes will not persist reliably across invocations and deployments.
+
+Use one of these options:
+
+- Recommended: move the backend to PostgreSQL or another external database before using Vercel in production
+- Demo only: set `DATABASE_URL=/tmp/tasks.db` and accept that data is temporary
+
+### Minimal repo shape for Vercel
+
+This repo includes `backend/app.py` so Vercel can detect the FastAPI application from the backend project root.
+
+### Create the Vercel backend project
+
+1. Push this repo to GitHub.
+2. In Vercel, choose `Add New Project`.
+3. Import the same repo again as a second Vercel project.
+4. Set the **Root Directory** to `backend`.
+
+### Configure the project
+
+Vercel should auto-detect the FastAPI app. If you are prompted for settings:
+
+- Framework Preset: leave on auto-detect, or choose `Other`
+- Install Command: leave empty
+- Build Command: leave empty
+
+### Add backend environment variables
+
+For a temporary demo on Vercel:
+
+```env
+APP_ENV=production
+DEBUG=false
+DATABASE_URL=/tmp/tasks.db
+CORS_ORIGINS=https://task-manager-three-rouge-66.vercel.app
+```
+
+For production, replace `DATABASE_URL` with your external database connection settings after you migrate off SQLite.
+
+### Deploy and test
+
+After deployment, note the backend domain from Vercel, for example:
+
+```text
+https://task-manager-api-example.vercel.app
+```
+
+Then test:
+
+- `https://YOUR_BACKEND_DOMAIN/health`
+- `https://YOUR_BACKEND_DOMAIN/api/tasks`
+
+## 2. Deploy the backend on EC2
 
 ### Create the instance
 
@@ -88,7 +151,7 @@ FastAPI’s deployment guidance is here:
 
 - https://fastapi.tiangolo.com/deployment/
 
-## 2. Deploy the frontend on Vercel
+## 3. Deploy the frontend on Vercel
 
 Vercel’s current Vite deployment docs say Vite projects can deploy directly with Vercel and support environment variables at build time:
 
@@ -117,20 +180,20 @@ In Vercel project settings, add:
 VITE_API_URL=https://api.example.com
 ```
 
-Use the same API domain you configured on EC2.
+Use the same API domain you configured on EC2 or Vercel.
 
 ### Redeploy
 
 After the env var is saved, trigger a new deployment in Vercel.
 
-## 3. Final checks
+## 4. Final checks
 
 After both are live:
 
 1. Open the frontend URL from Vercel.
 2. Create a task.
 3. Confirm the request reaches `https://api.example.com/api/tasks`.
-4. If the browser blocks requests, re-check `CORS_ORIGINS` on EC2.
+4. If the browser blocks requests, re-check `CORS_ORIGINS` on the backend deployment.
 
 ## Notes
 
