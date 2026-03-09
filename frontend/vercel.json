@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "http://13.201.33.176/api/$1"
+    },
+    {
+      "source": "/health",
+      "destination": "http://13.201.33.176/health"
+    }
+  ]
+}

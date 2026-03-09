@@ -81,7 +81,7 @@ APP_NAME=Task Manager API
 APP_ENV=production
 DEBUG=false
 DATABASE_URL=tasks.db
-CORS_ORIGINS=https://YOUR_VERCEL_PROJECT.vercel.app
+CORS_ORIGINS=https://task-manager-beta-puce.vercel.app
 ```
 
 If you later use a custom frontend domain, add it too, separated by commas.
@@ -99,7 +99,7 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 Then open:
 
 ```text
-http://YOUR_EC2_PUBLIC_IP:8000/health
+http://13.201.33.176:8000/health
 ```
 
 If it works, stop the process with `Ctrl+C`.
@@ -180,7 +180,7 @@ sudo systemctl restart nginx
 Open:
 
 ```text
-http://YOUR_EC2_PUBLIC_IP/health
+http://13.201.33.176/health
 ```
 
 If it returns a healthy response, the backend is deployed.
@@ -195,10 +195,23 @@ sudo journalctl -u taskmanager-api -n 100 --no-pager
 sudo systemctl status nginx
 ```
 
-## Important note
+## 13. Connect the Vercel frontend to EC2
 
-This deploys the backend successfully on EC2 over `http`.
+This repo includes [frontend/vercel.json](c:/Users/palvt/Desktop/TaskManager/frontend/vercel.json) with rewrites to:
 
-If your frontend is hosted on Vercel, it will be served over `https`, and the browser may block requests to a plain `http` backend as mixed content.
+- `http://13.201.33.176/api/*`
+- `http://13.201.33.176/health`
 
-So backend deployment on EC2 is fine, but frontend-to-backend integration may still require HTTPS later.
+That allows the Vercel frontend to call `/api/tasks` and `/api/summary` on its own domain, while Vercel forwards those requests to EC2.
+
+### What to do in Vercel
+
+1. Deploy the `frontend` folder as the project root.
+2. Remove `VITE_API_URL` from the production environment variables if you added it.
+3. Redeploy the frontend so `vercel.json` is applied.
+
+### Why this is needed
+
+Your backend is on plain `http` at `13.201.33.176`.
+
+If the browser tries to call that IP directly from a Vercel `https` page, it can be blocked as mixed content. The Vercel rewrite avoids that by keeping the browser request on the frontend domain.
