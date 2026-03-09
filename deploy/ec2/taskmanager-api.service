@@ -1,0 +1,15 @@
+[Unit]
+Description=Task Manager FastAPI service
+After=network.target
+
+[Service]
+User=ubuntu
+Group=www-data
+WorkingDirectory=/home/ubuntu/taskmanager/backend
+EnvironmentFile=/home/ubuntu/taskmanager/backend/.env
+ExecStart=/home/ubuntu/taskmanager/backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

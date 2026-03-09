@@ -35,3 +35,7 @@ docker compose up --build
 
 - Frontend: `http://localhost:3000`
 - Backend: `http://localhost:8000`
+
+## Cloud deployment
+
+Deployment steps for Vercel + EC2 are in [DEPLOYMENT.md](c:/Users/palvt/Desktop/TaskManager/DEPLOYMENT.md).

@@ -1,6 +1,6 @@
 import type { Summary, Task, TaskFormState } from "./types";
 
-const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? "http://localhost:8000" : "");
 const REQUEST_TIMEOUT_MS = 10000;
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
