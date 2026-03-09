@@ -1,56 +1,73 @@
-# Deployment Guide
+# Backend Deployment on EC2
 
-This repo is set up for:
+This guide is only for deploying the `backend/` folder to an Ubuntu EC2 instance.
 
-- `backend/` on an Ubuntu EC2 instance
-- `frontend/` on Vercel
+## 1. Create the EC2 instance
 
-## 1. Deploy the backend on EC2
-
-### Launch the instance
-
-Create an Ubuntu EC2 instance.
+Launch an Ubuntu EC2 instance.
 
 In the security group, allow:
 
-- `22` from your IP only
+- `22` from `My IP`
 - `80` from `0.0.0.0/0`
 - `8000` only if you want to test Uvicorn directly before Nginx
 
-### Connect to the server
+## 2. SSH into EC2
+
+Run this on your own computer:
 
 ```bash
-ssh -i /path/to/key.pem ubuntu@YOUR_EC2_PUBLIC_IP
+ssh -i "C:\Users\palvt\Downloads\myaws.pem" ubuntu@YOUR_EC2_PUBLIC_IP
 ```
 
-### Install required packages
+If your key file is stored somewhere else, replace the path.
+
+## 3. Install required packages on EC2
+
+After logging into the EC2 machine, run:
 
 ```bash
 sudo apt update && sudo apt upgrade -y
-sudo apt install -y git python3-venv python3-pip nginx
+sudo apt install -y python3-venv python3-pip nginx
 ```
 
-### Copy the project to EC2
-
-If the repo is on GitHub:
+## 4. Create the backend folder on EC2
 
 ```bash
-cd /home/ubuntu
-git clone YOUR_GITHUB_REPO_URL taskmanager
+mkdir -p /home/ubuntu/taskmanager/backend
 cd /home/ubuntu/taskmanager/backend
 ```
 
-If you already uploaded the repo manually, just go to the backend folder.
+## 5. Copy the backend files to EC2
 
-### Create the virtual environment
+Run these commands on your own computer from the project root:
 
 ```bash
+scp -i "C:\Users\palvt\Downloads\myaws.pem" -r backend\app ubuntu@YOUR_EC2_PUBLIC_IP:/home/ubuntu/taskmanager/backend/
+scp -i "C:\Users\palvt\Downloads\myaws.pem" backend\requirements.txt ubuntu@YOUR_EC2_PUBLIC_IP:/home/ubuntu/taskmanager/backend/
+scp -i "C:\Users\palvt\Downloads\myaws.pem" backend\.env.example ubuntu@YOUR_EC2_PUBLIC_IP:/home/ubuntu/taskmanager/backend/
+```
+
+After that, SSH back into the server if needed:
+
+```bash
+ssh -i "C:\Users\palvt\Downloads\myaws.pem" ubuntu@YOUR_EC2_PUBLIC_IP
+```
+
+## 6. Create the Python virtual environment
+
+Run on EC2:
+
+```bash
+cd /home/ubuntu/taskmanager/backend
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### Create the backend environment file
+## 7. Create the backend environment file
+
+Run on EC2:
 
 ```bash
 cp .env.example .env
@@ -67,52 +84,72 @@ DATABASE_URL=tasks.db
 CORS_ORIGINS=https://YOUR_VERCEL_PROJECT.vercel.app
 ```
 
-If you later use a custom frontend domain, add it too, comma-separated.
+If you later use a custom frontend domain, add it too, separated by commas.
 
-### Test FastAPI manually
+## 8. Test the backend manually
 
-From `/home/ubuntu/taskmanager/backend`:
+Run on EC2:
 
 ```bash
+cd /home/ubuntu/taskmanager/backend
 source .venv/bin/activate
 uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-Open:
+Then open:
 
 ```text
 http://YOUR_EC2_PUBLIC_IP:8000/health
 ```
 
-If it works, stop it with `Ctrl+C`.
+If it works, stop the process with `Ctrl+C`.
 
-### Run FastAPI with systemd
+## 9. Create a systemd service
 
-This repo includes a ready service file at:
-
-- `deploy/ec2/taskmanager-api.service`
-
-It assumes your backend is located at:
-
-- `/home/ubuntu/taskmanager/backend`
-
-If your EC2 path is different, edit the file before copying it.
-
-Install the service:
+Run on EC2:
 
 ```bash
-sudo cp /home/ubuntu/taskmanager/deploy/ec2/taskmanager-api.service /etc/systemd/system/taskmanager-api.service
+sudo nano /etc/systemd/system/taskmanager-api.service
+```
+
+Paste this:
+
+```ini
+[Unit]
+Description=Task Manager FastAPI service
+After=network.target
+
+[Service]
+User=ubuntu
+Group=www-data
+WorkingDirectory=/home/ubuntu/taskmanager/backend
+EnvironmentFile=/home/ubuntu/taskmanager/backend/.env
+ExecStart=/home/ubuntu/taskmanager/backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable and start it:
+
+```bash
 sudo systemctl daemon-reload
 sudo systemctl enable taskmanager-api
 sudo systemctl start taskmanager-api
 sudo systemctl status taskmanager-api
 ```
 
-### Put Nginx in front of FastAPI
+## 10. Configure Nginx
 
-Because you are not using a backend domain, use a default Nginx server config.
+Run on EC2:
 
-Create `/etc/nginx/sites-available/taskmanager-api` with:
+```bash
+sudo nano /etc/nginx/sites-available/taskmanager-api
+```
+
+Paste this:
 
 ```nginx
 server {
@@ -138,13 +175,19 @@ sudo nginx -t
 sudo systemctl restart nginx
 ```
 
-Now test:
+## 11. Final backend test
+
+Open:
 
 ```text
 http://YOUR_EC2_PUBLIC_IP/health
 ```
 
-### Useful backend checks
+If it returns a healthy response, the backend is deployed.
+
+## 12. Debug commands
+
+Run on EC2:
 
 ```bash
 sudo systemctl status taskmanager-api
@@ -152,63 +195,10 @@ sudo journalctl -u taskmanager-api -n 100 --no-pager
 sudo systemctl status nginx
 ```
 
-## 2. Deploy the frontend on Vercel
+## Important note
 
-### Push the repo to GitHub
+This deploys the backend successfully on EC2 over `http`.
 
-Vercel will deploy from GitHub, so push the latest changes first.
+If your frontend is hosted on Vercel, it will be served over `https`, and the browser may block requests to a plain `http` backend as mixed content.
 
-### Create the Vercel project
-
-1. Open Vercel.
-2. Choose `Add New Project`.
-3. Import your GitHub repo.
-4. Set the **Root Directory** to `frontend`.
-
-### Build settings
-
-If Vercel does not auto-detect them, use:
-
-- Framework Preset: `Vite`
-- Build Command: `npm run build`
-- Output Directory: `dist`
-
-### Add environment variable
-
-In the Vercel project settings, add:
-
-```env
-VITE_API_URL=http://YOUR_EC2_PUBLIC_IP
-```
-
-Then redeploy.
-
-## 3. Important limitation
-
-Your frontend on Vercel will be served over `https`.
-
-If `VITE_API_URL` points to `http://YOUR_EC2_PUBLIC_IP`, the browser may block requests as mixed content.
-
-That means:
-
-- EC2 deployment itself is fine
-- frontend and backend integration may fail in the browser without HTTPS on the backend
-
-The clean fix is to give the backend a domain and enable HTTPS later.
-
-## 4. Final checks
-
-After both are live:
-
-1. Open the backend health endpoint:
-   `http://YOUR_EC2_PUBLIC_IP/health`
-2. Open the Vercel frontend URL.
-3. Try creating a task.
-4. If the frontend cannot reach the backend, the likely cause is browser mixed-content blocking or `CORS_ORIGINS` mismatch.
-
-## Notes
-
-- SQLite is acceptable for a small single-instance EC2 deployment.
-- If you later move to multiple backend instances or heavier usage, switch to PostgreSQL.
-- FastAPI deployment docs: https://fastapi.tiangolo.com/deployment/
-- Vercel Vite docs: https://vercel.com/docs/frameworks/frontend/vite
+So backend deployment on EC2 is fine, but frontend-to-backend integration may still require HTTPS later.
