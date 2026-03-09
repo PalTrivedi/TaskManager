@@ -9,7 +9,14 @@ except ImportError:
     from config import settings
 
 
-DB_PATH = Path(__file__).resolve().parent.parent / settings.database_url
+def _resolve_db_path() -> Path:
+    configured_path = Path(settings.database_url)
+    if configured_path.is_absolute():
+        return configured_path
+    return Path(__file__).resolve().parent.parent / configured_path
+
+
+DB_PATH = _resolve_db_path()
 
 
 def init_db() -> None:
@@ -35,6 +42,7 @@ def init_db() -> None:
 
 @contextmanager
 def get_db() -> Iterator[sqlite3.Connection]:
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     connection = sqlite3.connect(DB_PATH)
     connection.row_factory = sqlite3.Row
     try:

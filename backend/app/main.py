@@ -17,7 +17,12 @@ except ImportError:
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    init_db()
+    try:
+        init_db()
+    except Exception as exc:
+        # Surface startup issues in provider logs while keeping the exception explicit.
+        print(f"Database initialization failed: {exc}")
+        raise
     yield
 
 
@@ -39,25 +44,30 @@ async def healthcheck() -> dict[str, str]:
 
 @app.get("/api/tasks", response_model=list[Task])
 async def fetch_tasks() -> list[Task]:
+    init_db()
     return list_tasks()
 
 
 @app.post("/api/tasks", response_model=Task, status_code=status.HTTP_201_CREATED)
 async def create_task_endpoint(payload: TaskCreate) -> Task:
+    init_db()
     return create_task(payload)
 
 
 @app.patch("/api/tasks/{task_id}", response_model=Task)
 async def update_task_endpoint(task_id: int, payload: TaskUpdate) -> Task:
+    init_db()
     return update_task(task_id, payload)
 
 
 @app.delete("/api/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_task_endpoint(task_id: int) -> Response:
+    init_db()
     delete_task(task_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @app.get("/api/summary", response_model=Summary)
 async def summary_endpoint() -> Summary:
+    init_db()
     return get_summary()
