@@ -20,7 +20,7 @@ In the security group, allow:
 ### Connect to the server
 
 ```bash
-ssh -i /path/to/key.pem ubuntu@YOUR_EC2_PUBLIC_IP
+ssh -i /path/to/key.pem ubuntu@13.233.70.109
 ```
 
 ### Install required packages
@@ -81,7 +81,7 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 Open:
 
 ```text
-http://YOUR_EC2_PUBLIC_IP:8000/health
+http://13.233.70.109:8000/health
 ```
 
 If it works, stop it with `Ctrl+C`.
@@ -141,7 +141,7 @@ sudo systemctl restart nginx
 Now test:
 
 ```text
-http://YOUR_EC2_PUBLIC_IP/health
+http://13.233.70.109/health
 ```
 
 ### Useful backend checks
@@ -178,7 +178,7 @@ If Vercel does not auto-detect them, use:
 In the Vercel project settings, add:
 
 ```env
-VITE_API_URL=http://YOUR_EC2_PUBLIC_IP
+VITE_API_URL=http://13.233.70.109
 ```
 
 Then redeploy.
@@ -187,7 +187,7 @@ Then redeploy.
 
 Your frontend on Vercel will be served over `https`.
 
-If `VITE_API_URL` points to `http://YOUR_EC2_PUBLIC_IP`, the browser may block requests as mixed content.
+If `VITE_API_URL` points to `http://13.233.70.109`, the browser may block requests as mixed content.
 
 That means:
 
@@ -201,7 +201,7 @@ The clean fix is to give the backend a domain and enable HTTPS later.
 After both are live:
 
 1. Open the backend health endpoint:
-   `http://YOUR_EC2_PUBLIC_IP/health`
+   `http://13.233.70.109/health`
 2. Open the Vercel frontend URL.
 3. Try creating a task.
 4. If the frontend cannot reach the backend, the likely cause is browser mixed-content blocking or `CORS_ORIGINS` mismatch.
