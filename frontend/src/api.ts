@@ -2,6 +2,20 @@ import type { Summary, Task, TaskFormState } from "./types";
 
 const API_BASE = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? "http://localhost:8000" : "");
 const REQUEST_TIMEOUT_MS = 10000;
+const USER_ID_KEY = "taskmanager:user_id";
+
+function getUserId(): string {
+  if (typeof window === "undefined") {
+    return "anonymous";
+  }
+  let userId = window.localStorage.getItem(USER_ID_KEY);
+  if (!userId) {
+    const fallback = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    userId = window.crypto?.randomUUID?.() ?? fallback;
+    window.localStorage.setItem(USER_ID_KEY, userId);
+  }
+  return userId;
+}
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const controller = new AbortController();
@@ -12,6 +26,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     response = await fetch(`${API_BASE}${path}`, {
       headers: {
         "Content-Type": "application/json",
+        "X-User-Id": getUserId(),
         ...(init?.headers ?? {}),
       },
       ...init,

@@ -31,6 +31,7 @@ class TaskUpdate(BaseModel):
 
 class Task(TaskBase):
     id: int
+    user_id: str
     created_at: datetime
     updated_at: datetime
 

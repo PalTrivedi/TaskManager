@@ -106,7 +106,6 @@ button {
 h1,
 h2,
 h3,
-.badge,
 .score-card strong,
 .primary-btn,
 .toggle-btn,
@@ -132,22 +131,6 @@ h1 {
   max-width: 640px;
   margin: 16px 0 22px;
   font-size: 1.08rem;
-}
-
-.badge-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  border-radius: 999px;
-  background: white;
-  border: 2px solid rgba(26, 19, 51, 0.08);
 }
 
 .hero-panel {

@@ -5,7 +5,8 @@ class Settings(BaseSettings):
     app_name: str = "Task Manager API"
     app_env: str = "development"
     debug: bool = True
-    database_url: str = "tasks.db"
+    supabase_url: str = ""
+    supabase_service_key: str = ""
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")

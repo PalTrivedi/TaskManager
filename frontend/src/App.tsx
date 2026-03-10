@@ -11,11 +11,7 @@ const initialForm: TaskFormState = {
   due_date: "",
 };
 
-const badges = [
-  { emoji: "🌈", label: "Bright mode only" },
-  { emoji: "⚡", label: "Fast task flow" },
-  { emoji: "🎉", label: "Mood-lifting UI" },
-];
+
 
 const categories = ["Personal", "Work", "Study", "Health", "Errands", "Fun"];
 
@@ -109,14 +105,6 @@ export default function App() {
               A cheerful task board with bold colors, quick actions, and a tiny emotional
               support squad of emojis.
             </p>
-            <div className="badge-row">
-              {badges.map((badge) => (
-                <span className="badge" key={badge.label}>
-                  <span>{badge.emoji}</span>
-                  {badge.label}
-                </span>
-              ))}
-            </div>
           </div>
 
           <div className="hero-panel">
@@ -269,3 +257,4 @@ export default function App() {
     </div>
   );
 }
+
