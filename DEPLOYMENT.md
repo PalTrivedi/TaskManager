@@ -210,10 +210,8 @@ If Vercel does not auto-detect them, use:
 In the Vercel frontend project settings, add:
 
 ```env
-BACKEND_BASE_URL=https://task-manager-f9nn.vercel.app
+VITE_API_URL=https://task-manager-f9nn.vercel.app
 ```
-
-Do not set `VITE_API_URL` in production.
 
 Then redeploy.
 
@@ -243,13 +241,24 @@ If you plan to enable RLS later, either:
 - keep using the service role key on the backend, or
 - switch to user auth and pass Supabase JWTs through the API.
 
-## 5. Frontend proxy
+## 5. Frontend to backend connection
 
-The frontend uses `frontend/api/[...path].js` as a small Vercel proxy.
+The frontend calls the backend directly over HTTPS:
 
-Browser requests go to the frontend domain on `/api/*`, and Vercel forwards them to `BACKEND_BASE_URL`.
+- frontend: `https://task-manager-beta-puce.vercel.app`
+- backend: `https://task-manager-f9nn.vercel.app`
 
-That keeps the browser on the frontend origin and avoids coupling the built frontend to a hard-coded backend host.
+That means the frontend should use:
+
+```env
+VITE_API_URL=https://task-manager-f9nn.vercel.app
+```
+
+and the backend should allow:
+
+```env
+CORS_ORIGINS=https://task-manager-beta-puce.vercel.app
+```
 
 ## 6. Final checks
 
@@ -260,7 +269,7 @@ After both are live:
 2. Open the Vercel frontend URL.
 3. Try creating a task.
 4. If the backend is crashing, check the Vercel function logs and confirm `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, and the `tasks` table are correct.
-5. If the frontend cannot reach the backend, confirm `BACKEND_BASE_URL` points to `https://task-manager-f9nn.vercel.app` and redeploy the frontend.
+5. If the frontend cannot reach the backend, confirm `VITE_API_URL` points to `https://task-manager-f9nn.vercel.app` and redeploy the frontend.
 
 ## Notes
 

@@ -1,6 +1,8 @@
 import type { Summary, Task, TaskFormState } from "./types";
 
-const API_BASE = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? "http://localhost:8000" : "");
+const API_BASE =
+  import.meta.env.VITE_API_URL ??
+  (import.meta.env.DEV ? "http://localhost:8000" : "https://task-manager-f9nn.vercel.app");
 const REQUEST_TIMEOUT_MS = 10000;
 const USER_ID_KEY = "taskmanager:user_id";
 
