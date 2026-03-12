@@ -19,7 +19,7 @@ APP_ENV=production
 DEBUG=false
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_KEY=your-service-role-key
-CORS_ORIGINS=https://YOUR_FRONTEND_PROJECT.vercel.app
+CORS_ORIGINS=https://task-manager-beta-puce.vercel.app
 ```
 
 Notes:
@@ -31,7 +31,7 @@ Notes:
 Health check:
 
 ```text
-https://YOUR_BACKEND_PROJECT.vercel.app/health
+https://task-manager-f9nn.vercel.app/health
 ```
 
 If the backend is misconfigured, `/health` now returns `database: unavailable` instead of crashing the whole function at startup.
@@ -210,7 +210,7 @@ If Vercel does not auto-detect them, use:
 In the Vercel frontend project settings, add:
 
 ```env
-BACKEND_BASE_URL=https://YOUR_BACKEND_PROJECT.vercel.app
+BACKEND_BASE_URL=https://task-manager-f9nn.vercel.app
 ```
 
 Do not set `VITE_API_URL` in production.
@@ -256,11 +256,11 @@ That keeps the browser on the frontend origin and avoids coupling the built fron
 After both are live:
 
 1. Open the backend health endpoint:
-   `https://YOUR_BACKEND_PROJECT.vercel.app/health`
+   `https://task-manager-f9nn.vercel.app/health`
 2. Open the Vercel frontend URL.
 3. Try creating a task.
 4. If the backend is crashing, check the Vercel function logs and confirm `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, and the `tasks` table are correct.
-5. If the frontend cannot reach the backend, confirm `BACKEND_BASE_URL` points to the backend Vercel URL and redeploy the frontend.
+5. If the frontend cannot reach the backend, confirm `BACKEND_BASE_URL` points to `https://task-manager-f9nn.vercel.app` and redeploy the frontend.
 
 ## Notes
 

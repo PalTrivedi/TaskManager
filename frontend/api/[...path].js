@@ -1,4 +1,4 @@
-const DEFAULT_BACKEND_BASE_URL = "";
+const DEFAULT_BACKEND_BASE_URL = "https://task-manager-f9nn.vercel.app";
 
 function getForwardHeaders(request) {
   const headers = {};
