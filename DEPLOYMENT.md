@@ -28,6 +28,7 @@ Notes:
 - the `tasks` table must already exist in Supabase
 - after changing any Vercel env var, redeploy because env changes only apply to new deployments
 - the backend now accepts `*.vercel.app` origins, so production and preview frontend deploys both pass CORS
+- task ownership is derived from the authenticated Supabase user in the bearer token
 
 Health check:
 
@@ -212,6 +213,8 @@ In the Vercel frontend project settings, add:
 
 ```env
 VITE_API_URL=https://task-manager-f9nn.vercel.app
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
 Then redeploy.
@@ -241,6 +244,8 @@ If you plan to enable RLS later, either:
 
 - keep using the service role key on the backend, or
 - switch to user auth and pass Supabase JWTs through the API.
+
+The frontend now signs users in with Supabase Auth and sends the bearer token to FastAPI. The backend verifies that token with Supabase and only loads tasks for that authenticated user id.
 
 ## 5. Frontend to backend connection
 

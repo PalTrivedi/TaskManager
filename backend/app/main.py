@@ -4,12 +4,12 @@ from fastapi.responses import JSONResponse
 
 try:
     from .config import settings
-    from .database import init_db
+    from .database import get_client, init_db
     from .repository import create_task, delete_task, get_summary, list_tasks, update_task
     from .schemas import Summary, Task, TaskCreate, TaskUpdate
 except ImportError:
     from config import settings
-    from database import init_db
+    from database import get_client, init_db
     from repository import create_task, delete_task, get_summary, list_tasks, update_task
     from schemas import Summary, Task, TaskCreate, TaskUpdate
 
@@ -79,10 +79,37 @@ async def healthcheck() -> dict[str, str]:
     }
 
 
-def require_user_id(x_user_id: str | None = Header(default=None, alias="X-User-Id")) -> str:
-    if not x_user_id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing X-User-Id header")
-    return x_user_id
+def require_user_id(authorization: str | None = Header(default=None, alias="Authorization")) -> str:
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing or invalid Authorization header",
+        )
+
+    token = authorization.removeprefix("Bearer ").strip()
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing or invalid Authorization header",
+        )
+
+    try:
+        user_response = get_client().auth.get_user(token)
+    except Exception as exc:
+        print(f"Auth verification failed: {exc}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired session",
+        ) from exc
+
+    user = getattr(user_response, "user", None)
+    user_id = getattr(user, "id", None)
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired session",
+        )
+    return user_id
 
 
 @app.get("/api/tasks", response_model=list[Task])

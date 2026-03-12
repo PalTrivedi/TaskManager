@@ -27,3 +27,8 @@ export interface TaskFormState {
   priority: Priority;
   due_date: string;
 }
+
+export interface AuthFormState {
+  email: string;
+  password: string;
+}

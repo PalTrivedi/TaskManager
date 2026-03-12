@@ -2,8 +2,8 @@
 
 Deployment-ready task manager with:
 
-- `frontend/`: React + Vite UI with bright colors, gradients, and emoji-heavy styling
-- `backend/`: FastAPI + SQLite API for task CRUD and summary stats
+- `frontend/`: React + Vite UI with Supabase Auth and a professional-cute dashboard
+- `backend/`: FastAPI API backed by Supabase for authenticated per-user task CRUD
 
 ## Local development
 
@@ -25,7 +25,13 @@ npm install
 npm run dev
 ```
 
-The frontend expects the API at `http://localhost:8000` by default.
+Frontend env vars:
+
+```env
+VITE_API_URL=http://localhost:8000
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+```
 
 ## Docker deployment
 

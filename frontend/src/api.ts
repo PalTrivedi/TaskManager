@@ -4,22 +4,8 @@ const API_BASE =
   import.meta.env.VITE_API_URL ??
   (import.meta.env.DEV ? "http://localhost:8000" : "https://task-manager-f9nn.vercel.app");
 const REQUEST_TIMEOUT_MS = 10000;
-const USER_ID_KEY = "taskmanager:user_id";
 
-function getUserId(): string {
-  if (typeof window === "undefined") {
-    return "anonymous";
-  }
-  let userId = window.localStorage.getItem(USER_ID_KEY);
-  if (!userId) {
-    const fallback = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-    userId = window.crypto?.randomUUID?.() ?? fallback;
-    window.localStorage.setItem(USER_ID_KEY, userId);
-  }
-  return userId;
-}
-
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+async function request<T>(path: string, accessToken: string, init?: RequestInit): Promise<T> {
   const controller = new AbortController();
   const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
@@ -28,7 +14,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     response = await fetch(`${API_BASE}${path}`, {
       headers: {
         "Content-Type": "application/json",
-        "X-User-Id": getUserId(),
+        Authorization: `Bearer ${accessToken}`,
         ...(init?.headers ?? {}),
       },
       ...init,
@@ -66,16 +52,16 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-export function fetchTasks(): Promise<Task[]> {
-  return request<Task[]>("/api/tasks");
+export function fetchTasksWithAuth(accessToken: string): Promise<Task[]> {
+  return request<Task[]>("/api/tasks", accessToken);
 }
 
-export function fetchSummary(): Promise<Summary> {
-  return request<Summary>("/api/summary");
+export function fetchSummaryWithAuth(accessToken: string): Promise<Summary> {
+  return request<Summary>("/api/summary", accessToken);
 }
 
-export function createTask(task: TaskFormState): Promise<Task> {
-  return request<Task>("/api/tasks", {
+export function createTaskWithAuth(accessToken: string, task: TaskFormState): Promise<Task> {
+  return request<Task>("/api/tasks", accessToken, {
     method: "POST",
     body: JSON.stringify({
       ...task,
@@ -84,15 +70,19 @@ export function createTask(task: TaskFormState): Promise<Task> {
   });
 }
 
-export function updateTask(taskId: number, updates: Partial<Task>): Promise<Task> {
-  return request<Task>(`/api/tasks/${taskId}`, {
+export function updateTaskWithAuth(
+  accessToken: string,
+  taskId: number,
+  updates: Partial<Task>,
+): Promise<Task> {
+  return request<Task>(`/api/tasks/${taskId}`, accessToken, {
     method: "PATCH",
     body: JSON.stringify(updates),
   });
 }
 
-export function deleteTask(taskId: number): Promise<void> {
-  return request<void>(`/api/tasks/${taskId}`, {
+export function deleteTaskWithAuth(accessToken: string, taskId: number): Promise<void> {
+  return request<void>(`/api/tasks/${taskId}`, accessToken, {
     method: "DELETE",
   });
 }
