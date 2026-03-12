@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 
 import {
+  ApiError,
   createTaskWithAuth,
   deleteTaskWithAuth,
   fetchSummaryWithAuth,
@@ -64,6 +65,20 @@ export default function App() {
   const accessToken = session?.access_token ?? "";
   const userEmail = session?.user.email ?? "";
 
+  async function signOutForExpiredSession() {
+    setError("");
+    setAuthMessage("Your session expired. Please sign in again.");
+    await supabase.auth.signOut();
+  }
+
+  async function handleApiFailure(err: unknown, fallbackMessage: string) {
+    if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
+      await signOutForExpiredSession();
+      return;
+    }
+    setError(err instanceof Error ? err.message : fallbackMessage);
+  }
+
   async function loadDashboard(token: string) {
     setLoading(true);
     try {
@@ -75,7 +90,7 @@ export default function App() {
       setSummary(summaryData);
       setError("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load tasks");
+      await handleApiFailure(err, "Failed to load tasks");
     } finally {
       setLoading(false);
     }
@@ -168,7 +183,7 @@ export default function App() {
       setTaskForm(initialTaskForm);
       await loadDashboard(accessToken);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not create task");
+      await handleApiFailure(err, "Could not create task");
     } finally {
       setSubmitting(false);
     }
@@ -181,7 +196,7 @@ export default function App() {
       await updateTaskWithAuth(accessToken, task.id, { completed: !task.completed });
       await loadDashboard(accessToken);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not update task");
+      await handleApiFailure(err, "Could not update task");
     }
   }
 
@@ -192,7 +207,7 @@ export default function App() {
       await deleteTaskWithAuth(accessToken, taskId);
       await loadDashboard(accessToken);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not delete task");
+      await handleApiFailure(err, "Could not delete task");
     }
   }
 

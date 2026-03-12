@@ -5,6 +5,16 @@ const API_BASE =
   (import.meta.env.DEV ? "http://localhost:8000" : "https://task-manager-f9nn.vercel.app");
 const REQUEST_TIMEOUT_MS = 10000;
 
+export class ApiError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
 async function request<T>(path: string, accessToken: string, init?: RequestInit): Promise<T> {
   const controller = new AbortController();
   const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
@@ -42,7 +52,7 @@ async function request<T>(path: string, accessToken: string, init?: RequestInit)
     } catch {
       // Keep the generic message when no JSON error body exists.
     }
-    throw new Error(detail);
+    throw new ApiError(detail, response.status);
   }
 
   if (response.status === 204) {
