@@ -2,18 +2,18 @@
   --bg: #fcf7f4;
   --surface: rgba(255, 255, 255, 0.9);
   --surface-strong: rgba(255, 255, 255, 0.96);
-  --ink: #241b45;
-  --muted: rgba(36, 27, 69, 0.66);
-  --line: rgba(36, 27, 69, 0.1);
-  --rose: #f3c4d9;
-  --pink: #ef88b3;
-  --amber: #efd88e;
-  --sky: #b8dff0;
-  --mint: #c6e7c0;
-  --teal: #89d4d2;
-  --peach: #f4a57c;
-  --danger: #cc6678;
-  --shadow: 0 24px 60px rgba(132, 98, 132, 0.15);
+  --ink: #1f1a1d;
+  --muted: rgba(31, 26, 29, 0.62);
+  --line: rgba(31, 26, 29, 0.1);
+  --rose: #f2c7c7;
+  --pink: #ffb7c5;
+  --amber: #f2d7cf;
+  --sky: #eef4ef;
+  --mint: #d5f3d8;
+  --teal: #d5f3d8;
+  --peach: #f2c7c7;
+  --danger: #b76374;
+  --shadow: 0 24px 60px rgba(160, 128, 136, 0.12);
 }
 
 * {
@@ -31,9 +31,9 @@ body {
   color: var(--ink);
   font-family: "Nunito", sans-serif;
   background:
-    radial-gradient(circle at top left, rgba(239, 136, 179, 0.18), transparent 22%),
-    radial-gradient(circle at bottom right, rgba(137, 212, 210, 0.18), transparent 24%),
-    linear-gradient(135deg, #fefaf8 0%, #fdf7fb 50%, #f8fcfd 100%);
+    radial-gradient(circle at top left, rgba(255, 183, 197, 0.18), transparent 22%),
+    radial-gradient(circle at bottom right, rgba(213, 243, 216, 0.2), transparent 24%),
+    linear-gradient(135deg, #fdfafa 0%, #ffffff 52%, #f8fcf8 100%);
 }
 
 button,
@@ -66,7 +66,7 @@ button {
   right: -50px;
   width: 280px;
   height: 280px;
-  background: rgba(239, 136, 179, 0.18);
+  background: rgba(255, 183, 197, 0.2);
 }
 
 .ambient-two {
@@ -74,7 +74,7 @@ button {
   left: -40px;
   width: 240px;
   height: 240px;
-  background: rgba(137, 212, 210, 0.16);
+  background: rgba(213, 243, 216, 0.22);
 }
 
 .auth-page {
@@ -127,7 +127,7 @@ h3,
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: 0.92rem;
-  color: #d06c95;
+  color: #c67c8c;
 }
 
 .auth-copy h1,
@@ -201,7 +201,7 @@ h3,
 }
 
 .switch-pill.active {
-  background: linear-gradient(135deg, var(--pink), var(--peach));
+  background: linear-gradient(135deg, #e9a7b8, #f2c7c7);
   color: white;
 }
 
@@ -232,8 +232,8 @@ select {
 input:focus,
 textarea:focus,
 select:focus {
-  border-color: rgba(239, 136, 179, 0.45);
-  box-shadow: 0 0 0 4px rgba(239, 136, 179, 0.08);
+  border-color: rgba(233, 167, 184, 0.45);
+  box-shadow: 0 0 0 4px rgba(233, 167, 184, 0.08);
 }
 
 textarea {
@@ -266,9 +266,9 @@ textarea {
   width: 100%;
   padding: 14px 18px;
   border-radius: 18px;
-  background: linear-gradient(135deg, var(--pink), var(--peach));
+  background: linear-gradient(135deg, #e9a7b8, #f2c7c7);
   color: white;
-  box-shadow: 0 16px 28px rgba(239, 136, 179, 0.16);
+  box-shadow: 0 16px 28px rgba(201, 141, 156, 0.16);
   font-size: 1.02rem;
 }
 
@@ -290,9 +290,9 @@ textarea {
 }
 
 .info-banner {
-  background: rgba(184, 223, 240, 0.34);
-  border: 1px solid rgba(104, 165, 194, 0.28);
-  color: #255776;
+  background: rgba(213, 243, 216, 0.42);
+  border: 1px solid rgba(148, 186, 151, 0.28);
+  color: #36583b;
 }
 
 .alert {
@@ -302,9 +302,9 @@ textarea {
 }
 
 .empty-state {
-  background: rgba(239, 216, 142, 0.22);
-  border: 1px dashed rgba(193, 151, 37, 0.45);
-  color: #70550f;
+  background: rgba(242, 199, 199, 0.18);
+  border: 1px dashed rgba(180, 132, 132, 0.4);
+  color: #78595e;
 }
 
 .dashboard-layout {
@@ -347,8 +347,8 @@ textarea {
   width: 14px;
   height: 14px;
   border-radius: 999px;
-  background: linear-gradient(135deg, var(--pink), var(--teal));
-  box-shadow: 0 0 0 6px rgba(239, 136, 179, 0.08);
+  background: linear-gradient(135deg, #ebb1be, #d5f3d8);
+  box-shadow: 0 0 0 6px rgba(235, 177, 190, 0.08);
 }
 
 .user-chip p {
@@ -386,19 +386,19 @@ textarea {
 }
 
 .card-rose {
-  background: linear-gradient(180deg, #f9dbe7, #f0c3d8);
+  background: linear-gradient(180deg, #f6d8d8, #f2c7c7);
 }
 
 .card-amber {
-  background: linear-gradient(180deg, #f7ecc0, #efd88e);
+  background: linear-gradient(180deg, #fffefe, #f8f6f6);
 }
 
 .card-sky {
-  background: linear-gradient(180deg, #dff1f8, #b8dff0);
+  background: linear-gradient(180deg, #e5f4e6, #d5f3d8);
 }
 
 .card-mint {
-  background: linear-gradient(180deg, #dff1db, #c6e7c0);
+  background: linear-gradient(180deg, #ffd0db, #ffb7c5);
 }
 
 .dashboard-grid {
@@ -484,7 +484,7 @@ textarea {
 
 .task-category {
   margin: 0 0 6px;
-  color: #cd6a94;
+  color: #c27a8b;
   font-size: 0.94rem;
   font-weight: 800;
 }
@@ -521,21 +521,21 @@ textarea {
 .toggle-btn {
   padding: 11px 15px;
   border-radius: 16px;
-  background: linear-gradient(135deg, var(--teal), #b6ece8);
+  background: linear-gradient(135deg, #d5f3d8, #ebf7ec);
   color: var(--ink);
   font-weight: 800;
 }
 
 .toggle-btn.done {
-  background: linear-gradient(135deg, #b8e0b2, #d8efc8);
+  background: linear-gradient(135deg, #ffccd7, #f6d9df);
 }
 
 .icon-btn {
   min-width: 74px;
   min-height: 42px;
   border-radius: 14px;
-  background: rgba(239, 136, 179, 0.12);
-  color: #9f446e;
+  background: rgba(242, 199, 199, 0.4);
+  color: #8a6068;
   font-weight: 800;
 }
 
