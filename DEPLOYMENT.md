@@ -27,6 +27,7 @@ Notes:
 - `SUPABASE_SERVICE_KEY` must be the service role key, not the anon key
 - the `tasks` table must already exist in Supabase
 - after changing any Vercel env var, redeploy because env changes only apply to new deployments
+- the backend now accepts `*.vercel.app` origins, so production and preview frontend deploys both pass CORS
 
 Health check:
 

@@ -15,5 +15,10 @@ class Settings(BaseSettings):
     def allowed_origins(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
 
+    @property
+    def allowed_origin_regex(self) -> str:
+        # Allow Vercel production and preview deployments without forcing exact env matches.
+        return r"^https://([a-zA-Z0-9-]+\.)?vercel\.app$"
+
 
 settings = Settings()
