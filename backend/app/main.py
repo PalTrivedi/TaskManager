@@ -1,5 +1,6 @@
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 try:
     from .config import settings
@@ -31,7 +32,16 @@ async def force_cors_headers(request: Request, call_next):
     if request.method == "OPTIONS":
         response = Response(status_code=status.HTTP_200_OK)
     else:
-        response = await call_next(request)
+        try:
+            response = await call_next(request)
+        except HTTPException as exc:
+            response = JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+        except Exception as exc:
+            print(f"Unhandled API error: {exc}")
+            response = JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content={"detail": "Internal server error"},
+            )
 
     if settings.is_allowed_origin(origin):
         response.headers["Access-Control-Allow-Origin"] = origin
@@ -41,6 +51,17 @@ async def force_cors_headers(request: Request, call_next):
         response.headers["Access-Control-Allow-Headers"] = "Content-Type,X-User-Id,Authorization"
 
     return response
+
+
+def ensure_database() -> None:
+    try:
+        init_db()
+    except Exception as exc:
+        print(f"Database request failed: {exc}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database is not configured or the tasks table is missing",
+        ) from exc
 
 
 @app.get("/health")
@@ -66,7 +87,7 @@ def require_user_id(x_user_id: str | None = Header(default=None, alias="X-User-I
 
 @app.get("/api/tasks", response_model=list[Task])
 async def fetch_tasks(user_id: str = Depends(require_user_id)) -> list[Task]:
-    init_db()
+    ensure_database()
     return list_tasks(user_id)
 
 
@@ -74,7 +95,7 @@ async def fetch_tasks(user_id: str = Depends(require_user_id)) -> list[Task]:
 async def create_task_endpoint(
     payload: TaskCreate, user_id: str = Depends(require_user_id)
 ) -> Task:
-    init_db()
+    ensure_database()
     return create_task(user_id, payload)
 
 
@@ -82,7 +103,7 @@ async def create_task_endpoint(
 async def update_task_endpoint(
     task_id: int, payload: TaskUpdate, user_id: str = Depends(require_user_id)
 ) -> Task:
-    init_db()
+    ensure_database()
     return update_task(user_id, task_id, payload)
 
 
@@ -90,12 +111,12 @@ async def update_task_endpoint(
 async def delete_task_endpoint(
     task_id: int, user_id: str = Depends(require_user_id)
 ) -> Response:
-    init_db()
+    ensure_database()
     delete_task(user_id, task_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @app.get("/api/summary", response_model=Summary)
 async def summary_endpoint(user_id: str = Depends(require_user_id)) -> Summary:
-    init_db()
+    ensure_database()
     return get_summary(user_id)
