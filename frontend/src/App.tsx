@@ -26,6 +26,8 @@ const initialAuthForm: AuthFormState = {
 };
 
 const categories = ["Personal", "Work", "Study", "Health", "Errands", "Fun"];
+const emailRedirectTo =
+  typeof window === "undefined" ? undefined : `${window.location.origin}/`;
 
 function formatDate(value: string | null): string {
   if (!value) return "No deadline";
@@ -146,6 +148,9 @@ export default function App() {
         const { error: signUpError } = await supabase.auth.signUp({
           email: authForm.email,
           password: authForm.password,
+          options: {
+            emailRedirectTo,
+          },
         });
         if (signUpError) throw signUpError;
         setAuthMessage("Account created. Sign in to open your private workspace.");
