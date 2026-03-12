@@ -248,17 +248,19 @@ The frontend calls the backend directly over HTTPS:
 - frontend: `https://task-manager-beta-puce.vercel.app`
 - backend: `https://task-manager-f9nn.vercel.app`
 
-That means the frontend should use:
+Use:
 
 ```env
 VITE_API_URL=https://task-manager-f9nn.vercel.app
 ```
 
-and the backend should allow:
+on the frontend project, and:
 
 ```env
 CORS_ORIGINS=https://task-manager-beta-puce.vercel.app
 ```
+
+on the backend project.
 
 ## 6. Final checks
 
@@ -269,7 +271,7 @@ After both are live:
 2. Open the Vercel frontend URL.
 3. Try creating a task.
 4. If the backend is crashing, check the Vercel function logs and confirm `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, and the `tasks` table are correct.
-5. If the frontend cannot reach the backend, confirm `VITE_API_URL` points to `https://task-manager-f9nn.vercel.app` and redeploy the frontend.
+5. If the frontend cannot reach the backend, confirm `VITE_API_URL` points to `https://task-manager-f9nn.vercel.app`, then redeploy the frontend and hard-refresh the browser.
 
 ## Notes
 
