@@ -35,10 +35,10 @@ function formatDate(value: string | null): string {
   });
 }
 
-function priorityTone(priority: Task["priority"]): string {
-  if (priority === "high") return "High focus";
-  if (priority === "medium") return "Steady pace";
-  return "Light lift";
+function priorityLabel(priority: Task["priority"]): string {
+  if (priority === "high") return "High priority";
+  if (priority === "medium") return "Medium priority";
+  return "Low priority";
 }
 
 export default function App() {
@@ -62,7 +62,7 @@ export default function App() {
   const [error, setError] = useState("");
 
   const accessToken = session?.access_token ?? "";
-  const userEmail = session?.user.email ?? "Signed in";
+  const userEmail = session?.user.email ?? "";
 
   async function loadDashboard(token: string) {
     setLoading(true);
@@ -106,11 +106,13 @@ export default function App() {
       setSession(nextSession);
       setAuthLoading(false);
       setError("");
+      setAuthMessage("");
       if (nextSession?.access_token) {
         void loadDashboard(nextSession.access_token);
       } else {
         setTasks([]);
         setSummary({ total: 0, completed: 0, pending: 0, high_priority: 0 });
+        setTaskForm(initialTaskForm);
       }
     });
 
@@ -131,7 +133,7 @@ export default function App() {
           password: authForm.password,
         });
         if (signUpError) throw signUpError;
-        setAuthMessage("Account created. If email confirmation is enabled, confirm it first.");
+        setAuthMessage("Account created. Sign in to open your private workspace.");
         setAuthMode("signin");
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -139,7 +141,6 @@ export default function App() {
           password: authForm.password,
         });
         if (signInError) throw signInError;
-        setAuthMessage("");
       }
     } catch (err) {
       setAuthMessage(err instanceof Error ? err.message : "Authentication failed");
@@ -152,8 +153,6 @@ export default function App() {
     setAuthBusy(true);
     try {
       await supabase.auth.signOut();
-      setTaskForm(initialTaskForm);
-      setAuthMessage("");
     } finally {
       setAuthBusy(false);
     }
@@ -197,238 +196,252 @@ export default function App() {
     }
   }
 
+  if (authLoading) {
+    return (
+      <div className="app-shell">
+        <div className="ambient ambient-one" />
+        <div className="ambient ambient-two" />
+        <main className="auth-page">
+          <section className="auth-panel auth-panel-loading">
+            <p className="auth-brand">Task Party</p>
+            <h1>Loading your private workspace...</h1>
+          </section>
+        </main>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <div className="app-shell">
+        <div className="ambient ambient-one" />
+        <div className="ambient ambient-two" />
+
+        <main className="auth-page">
+          <section className="auth-panel auth-copy">
+            <p className="auth-brand">Task Party</p>
+            <h1>Private planning with a softer, sharper edge.</h1>
+            <p className="auth-lead">
+              Sign in to enter your own task room. Every list is tied to a verified account,
+              so your tasks stay yours.
+            </p>
+            <div className="auth-notes">
+              <span>Account-based privacy</span>
+              <span>Supabase authentication</span>
+              <span>Focused daily task flow</span>
+            </div>
+          </section>
+
+          <section className="auth-panel auth-form-panel">
+            <div className="auth-header">
+              <p className="section-kicker">Secure access</p>
+              <h2>{authMode === "signin" ? "Sign in" : "Create your account"}</h2>
+              <p>
+                {authMode === "signin"
+                  ? "Pick up exactly where you left your task list."
+                  : "Create a dedicated account for your personal task space."}
+              </p>
+            </div>
+
+            <form className="auth-form" onSubmit={handleAuthSubmit}>
+              <div className="auth-switch">
+                <button
+                  type="button"
+                  className={authMode === "signin" ? "switch-pill active" : "switch-pill"}
+                  onClick={() => setAuthMode("signin")}
+                >
+                  Sign in
+                </button>
+                <button
+                  type="button"
+                  className={authMode === "signup" ? "switch-pill active" : "switch-pill"}
+                  onClick={() => setAuthMode("signup")}
+                >
+                  Sign up
+                </button>
+              </div>
+
+              <label>
+                <span>Email</span>
+                <input
+                  type="email"
+                  required
+                  value={authForm.email}
+                  onChange={(event) =>
+                    setAuthForm((current) => ({ ...current, email: event.target.value }))
+                  }
+                  placeholder="you@example.com"
+                />
+              </label>
+
+              <label>
+                <span>Password</span>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={authForm.password}
+                  onChange={(event) =>
+                    setAuthForm((current) => ({ ...current, password: event.target.value }))
+                  }
+                  placeholder="At least 6 characters"
+                />
+              </label>
+
+              {authMessage ? <div className="info-banner">{authMessage}</div> : null}
+
+              <button type="submit" className="primary-btn" disabled={authBusy}>
+                {authBusy
+                  ? "Working..."
+                  : authMode === "signin"
+                    ? "Enter workspace"
+                    : "Create account"}
+              </button>
+            </form>
+          </section>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="app-shell">
-      <div className="halo halo-one" />
-      <div className="halo halo-two" />
-      <div className="grain" />
-
-      <main className="layout">
+      <div className="ambient ambient-one" />
+      <div className="ambient ambient-two" />
+      <main className="dashboard-layout">
         <section className="hero card">
           <div className="hero-copy">
-            <p className="eyebrow">Task Party Studio</p>
-            <h1>Organized, adorable, and finally locked to your account.</h1>
+            <p className="eyebrow">Task Party</p>
+            <h1>Plan your day with a calm, charming system.</h1>
             <p className="hero-text">
-              Bright planning for serious work. Sign in, keep your own task lane, and
-              never leak your list into someone else&apos;s browser again.
+              Your workspace is private, signed in, and built for clean momentum.
             </p>
-            <div className="hero-tags">
-              <span>Personal workspace</span>
-              <span>Supabase auth</span>
-              <span>Private task stream</span>
+            <div className="hero-subrow">
+              <div className="user-chip">
+                <div className="avatar-dot" />
+                <div>
+                  <strong>{userEmail}</strong>
+                  <p>Signed in and isolated</p>
+                </div>
+              </div>
+              <button type="button" className="secondary-btn signout-btn" onClick={() => void handleSignOut()}>
+                {authBusy ? "Signing out..." : "Sign out"}
+              </button>
             </div>
           </div>
 
           <div className="hero-panel">
-            <div className="score-card card-pink">
+            <div className="score-card card-rose">
               <span>Total</span>
               <strong>{summary.total}</strong>
             </div>
-            <div className="score-card card-gold">
+            <div className="score-card card-amber">
               <span>Done</span>
               <strong>{summary.completed}</strong>
             </div>
-            <div className="score-card card-blue">
+            <div className="score-card card-sky">
               <span>Pending</span>
               <strong>{summary.pending}</strong>
             </div>
-            <div className="score-card card-green">
+            <div className="score-card card-mint">
               <span>High priority</span>
               <strong>{summary.high_priority}</strong>
             </div>
           </div>
         </section>
 
-        <section className="content-grid">
-          <aside className="sidebar-stack">
-            <section className="card auth-card">
-              <div className="section-title">
-                <p className="section-kicker">Private access</p>
-                <h2>{session ? "Your workspace" : authMode === "signin" ? "Welcome back" : "Create account"}</h2>
-                <p>
-                  {session
-                    ? "Tasks are scoped to the authenticated user behind this session."
-                    : "Use Supabase Auth so every task belongs to one real account."}
-                </p>
-              </div>
+        <section className="dashboard-grid">
+          <form className="card composer" onSubmit={handleTaskSubmit}>
+            <div className="section-title">
+              <p className="section-kicker">New task</p>
+              <h2>Add a new mission</h2>
+              <p>Capture the work quickly, then keep the list moving.</p>
+            </div>
 
-              {authLoading ? (
-                <div className="empty-state">Checking session...</div>
-              ) : session ? (
-                <div className="signed-in-panel">
-                  <div className="user-chip">
-                    <div className="avatar-dot" />
-                    <div>
-                      <strong>{userEmail}</strong>
-                      <p>Authenticated and isolated</p>
-                    </div>
-                  </div>
-                  <button type="button" className="secondary-btn" onClick={() => void handleSignOut()}>
-                    {authBusy ? "Signing out..." : "Sign out"}
-                  </button>
-                </div>
-              ) : (
-                <form className="auth-form" onSubmit={handleAuthSubmit}>
-                  <div className="auth-switch">
-                    <button
-                      type="button"
-                      className={authMode === "signin" ? "switch-pill active" : "switch-pill"}
-                      onClick={() => setAuthMode("signin")}
-                    >
-                      Sign in
-                    </button>
-                    <button
-                      type="button"
-                      className={authMode === "signup" ? "switch-pill active" : "switch-pill"}
-                      onClick={() => setAuthMode("signup")}
-                    >
-                      Sign up
-                    </button>
-                  </div>
+            <label>
+              <span>Task title</span>
+              <input
+                required
+                value={taskForm.title}
+                onChange={(event) => setTaskForm({ ...taskForm, title: event.target.value })}
+                placeholder="Launch homepage refresh"
+              />
+            </label>
 
-                  <label>
-                    <span>Email</span>
-                    <input
-                      type="email"
-                      required
-                      value={authForm.email}
-                      onChange={(event) =>
-                        setAuthForm((current) => ({ ...current, email: event.target.value }))
-                      }
-                      placeholder="you@example.com"
-                    />
-                  </label>
+            <label>
+              <span>Description</span>
+              <textarea
+                rows={4}
+                value={taskForm.description}
+                onChange={(event) =>
+                  setTaskForm({ ...taskForm, description: event.target.value })
+                }
+                placeholder="A short note, context, or next step."
+              />
+            </label>
 
-                  <label>
-                    <span>Password</span>
-                    <input
-                      type="password"
-                      required
-                      minLength={6}
-                      value={authForm.password}
-                      onChange={(event) =>
-                        setAuthForm((current) => ({ ...current, password: event.target.value }))
-                      }
-                      placeholder="At least 6 characters"
-                    />
-                  </label>
-
-                  {authMessage ? <div className="info-banner">{authMessage}</div> : null}
-
-                  <button type="submit" className="primary-btn" disabled={authBusy}>
-                    {authBusy
-                      ? "Working..."
-                      : authMode === "signin"
-                        ? "Sign in"
-                        : "Create account"}
-                  </button>
-                </form>
-              )}
-            </section>
-
-            <form className="card composer" onSubmit={handleTaskSubmit}>
-              <div className="section-title">
-                <p className="section-kicker">New task</p>
-                <h2>Add a polished little mission</h2>
-                <p>Fast capture on the left, tidy parade on the right.</p>
-              </div>
-
+            <div className="split-fields">
               <label>
-                <span>Task title</span>
-                <input
-                  required
-                  disabled={!session}
-                  value={taskForm.title}
-                  onChange={(event) => setTaskForm({ ...taskForm, title: event.target.value })}
-                  placeholder="Ship portfolio refresh"
-                />
+                <span>Category</span>
+                <select
+                  value={taskForm.category}
+                  onChange={(event) => setTaskForm({ ...taskForm, category: event.target.value })}
+                >
+                  {categories.map((category) => (
+                    <option value={category} key={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
               </label>
 
               <label>
-                <span>Description</span>
-                <textarea
-                  rows={4}
-                  disabled={!session}
-                  value={taskForm.description}
+                <span>Priority</span>
+                <select
+                  value={taskForm.priority}
                   onChange={(event) =>
-                    setTaskForm({ ...taskForm, description: event.target.value })
+                    setTaskForm({
+                      ...taskForm,
+                      priority: event.target.value as TaskFormState["priority"],
+                    })
                   }
-                  placeholder="Add a crisp note so tomorrow-you thanks you."
-                />
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
               </label>
+            </div>
 
-              <div className="split-fields">
-                <label>
-                  <span>Category</span>
-                  <select
-                    disabled={!session}
-                    value={taskForm.category}
-                    onChange={(event) =>
-                      setTaskForm({ ...taskForm, category: event.target.value })
-                    }
-                  >
-                    {categories.map((category) => (
-                      <option value={category} key={category}>
-                        {category}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+            <label>
+              <span>Due date</span>
+              <input
+                type="date"
+                value={taskForm.due_date}
+                onChange={(event) => setTaskForm({ ...taskForm, due_date: event.target.value })}
+              />
+            </label>
 
-                <label>
-                  <span>Priority</span>
-                  <select
-                    disabled={!session}
-                    value={taskForm.priority}
-                    onChange={(event) =>
-                      setTaskForm({
-                        ...taskForm,
-                        priority: event.target.value as TaskFormState["priority"],
-                      })
-                    }
-                  >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                  </select>
-                </label>
-              </div>
-
-              <label>
-                <span>Due date</span>
-                <input
-                  type="date"
-                  disabled={!session}
-                  value={taskForm.due_date}
-                  onChange={(event) => setTaskForm({ ...taskForm, due_date: event.target.value })}
-                />
-              </label>
-
-              <button type="submit" className="primary-btn" disabled={submitting || !session}>
-                {submitting ? "Saving..." : session ? "Add task" : "Sign in to add tasks"}
-              </button>
-            </form>
-          </aside>
+            <button type="submit" className="primary-btn" disabled={submitting}>
+              {submitting ? "Saving..." : "Add task"}
+            </button>
+          </form>
 
           <section className="card board">
             <div className="board-header">
               <div className="section-title">
                 <p className="section-kicker">Task parade</p>
                 <h2>Today&apos;s task parade</h2>
-                <p>Private to your account, scrollable when the list gets busy.</p>
+                <p>Your personal list, now in a cleaner and calmer layout.</p>
               </div>
-              {session ? <div className="mini-badge">{userEmail}</div> : null}
             </div>
 
             {error ? <div className="alert">{error}</div> : null}
-            {!session && !authLoading ? (
-              <div className="empty-state">Sign in to load your private task board.</div>
-            ) : null}
-            {loading ? <div className="empty-state">Loading your parade...</div> : null}
+            {loading ? <div className="empty-state">Loading your tasks...</div> : null}
 
             <div className="task-list-shell">
-              {!loading && session && tasks.length === 0 ? (
-                <div className="empty-state">No tasks yet. Start with one elegant win.</div>
+              {!loading && tasks.length === 0 ? (
+                <div className="empty-state">No tasks yet. Start with one tiny win.</div>
               ) : null}
 
               <div className="task-list">
@@ -437,7 +450,7 @@ export default function App() {
                     <div className="task-top">
                       <div>
                         <p className="task-category">
-                          {task.category} <span>{priorityTone(task.priority)}</span>
+                          {task.category} <span>{priorityLabel(task.priority)}</span>
                         </p>
                         <h3 className={task.completed ? "completed" : ""}>{task.title}</h3>
                       </div>
@@ -447,7 +460,7 @@ export default function App() {
                         onClick={() => void removeTask(task.id)}
                         aria-label={`Delete ${task.title}`}
                       >
-                        Del
+                        Remove
                       </button>
                     </div>
 
