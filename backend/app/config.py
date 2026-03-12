@@ -1,3 +1,5 @@
+import re
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -19,6 +21,13 @@ class Settings(BaseSettings):
     def allowed_origin_regex(self) -> str:
         # Allow Vercel production and preview deployments without forcing exact env matches.
         return r"^https://([a-zA-Z0-9-]+\.)?vercel\.app$"
+
+    def is_allowed_origin(self, origin: str | None) -> bool:
+        if not origin:
+            return False
+        if origin in self.allowed_origins:
+            return True
+        return re.match(self.allowed_origin_regex, origin) is not None
 
 
 settings = Settings()

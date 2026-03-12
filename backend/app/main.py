@@ -1,4 +1,4 @@
-from fastapi import Depends, FastAPI, Header, HTTPException, Response, status
+from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 
 try:
@@ -23,6 +23,24 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def force_cors_headers(request: Request, call_next):
+    origin = request.headers.get("origin")
+    if request.method == "OPTIONS":
+        response = Response(status_code=status.HTTP_200_OK)
+    else:
+        response = await call_next(request)
+
+    if settings.is_allowed_origin(origin):
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Vary"] = "Origin"
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Allow-Methods"] = "GET,POST,PATCH,DELETE,OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type,X-User-Id,Authorization"
+
+    return response
 
 
 @app.get("/health")
