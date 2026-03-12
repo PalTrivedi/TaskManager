@@ -1,4 +1,4 @@
-const DEFAULT_BACKEND_BASE_URL = "http://13.233.70.109";
+const DEFAULT_BACKEND_BASE_URL = "";
 
 function getForwardHeaders(request) {
   const headers = {};
@@ -28,6 +28,12 @@ function getForwardBody(request) {
 
 export default async function handler(request, response) {
   const backendBaseUrl = process.env.BACKEND_BASE_URL || DEFAULT_BACKEND_BASE_URL;
+  if (!backendBaseUrl) {
+    response.status(500).json({
+      detail: "BACKEND_BASE_URL is not configured",
+    });
+    return;
+  }
   const pathSegments = Array.isArray(request.query.path) ? request.query.path : [request.query.path];
   const upstreamPath = pathSegments.filter(Boolean).join("/");
   const queryIndex = request.url.indexOf("?");

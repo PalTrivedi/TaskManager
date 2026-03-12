@@ -2,10 +2,41 @@
 
 This repo is set up for:
 
-- `backend/` on an Ubuntu EC2 instance
+- `backend/` on Vercel or an Ubuntu EC2 instance
 - `frontend/` on Vercel
 
-## 1. Deploy the backend on EC2
+## 1. Deploy the backend on Vercel
+
+Set the Vercel project root to `backend`.
+
+The backend entrypoint is `backend/index.py`, which exports the FastAPI `app`.
+
+Add these environment variables in the Vercel backend project:
+
+```env
+APP_NAME=Task Manager API
+APP_ENV=production
+DEBUG=false
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_KEY=your-service-role-key
+CORS_ORIGINS=https://YOUR_FRONTEND_PROJECT.vercel.app
+```
+
+Notes:
+
+- `SUPABASE_SERVICE_KEY` must be the service role key, not the anon key
+- the `tasks` table must already exist in Supabase
+- after changing any Vercel env var, redeploy because env changes only apply to new deployments
+
+Health check:
+
+```text
+https://YOUR_BACKEND_PROJECT.vercel.app/health
+```
+
+If the backend is misconfigured, `/health` now returns `database: unavailable` instead of crashing the whole function at startup.
+
+## 2. Deploy the backend on EC2
 
 ### Launch the instance
 
@@ -153,7 +184,7 @@ sudo journalctl -u taskmanager-api -n 100 --no-pager
 sudo systemctl status nginx
 ```
 
-## 2. Deploy the frontend on Vercel
+## 3. Deploy the frontend on Vercel
 
 ### Push the repo to GitHub
 
@@ -176,15 +207,17 @@ If Vercel does not auto-detect them, use:
 
 ### Add environment variable
 
-In the Vercel project settings, add:
+In the Vercel frontend project settings, add:
 
 ```env
-VITE_API_URL=http://13.233.70.109
+BACKEND_BASE_URL=https://YOUR_BACKEND_PROJECT.vercel.app
 ```
+
+Do not set `VITE_API_URL` in production.
 
 Then redeploy.
 
-## 3. Supabase setup
+## 4. Supabase setup
 
 Create a `tasks` table in Supabase (SQL editor):
 
@@ -210,28 +243,24 @@ If you plan to enable RLS later, either:
 - keep using the service role key on the backend, or
 - switch to user auth and pass Supabase JWTs through the API.
 
-## 4. Important limitation
+## 5. Frontend proxy
 
-Your frontend on Vercel will be served over `https`.
+The frontend uses `frontend/api/[...path].js` as a small Vercel proxy.
 
-If `VITE_API_URL` points to `http://13.233.70.109`, the browser may block requests as mixed content.
+Browser requests go to the frontend domain on `/api/*`, and Vercel forwards them to `BACKEND_BASE_URL`.
 
-That means:
+That keeps the browser on the frontend origin and avoids coupling the built frontend to a hard-coded backend host.
 
-- EC2 deployment itself is fine
-- frontend and backend integration may fail in the browser without HTTPS on the backend
-
-The clean fix is to give the backend a domain and enable HTTPS later.
-
-## 5. Final checks
+## 6. Final checks
 
 After both are live:
 
 1. Open the backend health endpoint:
-   `http://13.233.70.109/health`
+   `https://YOUR_BACKEND_PROJECT.vercel.app/health`
 2. Open the Vercel frontend URL.
 3. Try creating a task.
-4. If the frontend cannot reach the backend, the likely cause is browser mixed-content blocking or `CORS_ORIGINS` mismatch.
+4. If the backend is crashing, check the Vercel function logs and confirm `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, and the `tasks` table are correct.
+5. If the frontend cannot reach the backend, confirm `BACKEND_BASE_URL` points to the backend Vercel URL and redeploy the frontend.
 
 ## Notes
 

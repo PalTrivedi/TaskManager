@@ -1,5 +1,3 @@
-from contextlib import asynccontextmanager
-
 from fastapi import Depends, FastAPI, Header, HTTPException, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -15,18 +13,7 @@ except ImportError:
     from schemas import Summary, Task, TaskCreate, TaskUpdate
 
 
-@asynccontextmanager
-async def lifespan(_: FastAPI):
-    try:
-        init_db()
-    except Exception as exc:
-        # Surface startup issues in provider logs while keeping the exception explicit.
-        print(f"Database initialization failed: {exc}")
-        raise
-    yield
-
-
-app = FastAPI(title=settings.app_name, debug=settings.debug, lifespan=lifespan)
+app = FastAPI(title=settings.app_name, debug=settings.debug)
 
 app.add_middleware(
     CORSMiddleware,
@@ -39,7 +26,17 @@ app.add_middleware(
 
 @app.get("/health")
 async def healthcheck() -> dict[str, str]:
-    return {"status": "ok", "environment": settings.app_env}
+    try:
+        init_db()
+        database_status = "ok"
+    except Exception as exc:
+        print(f"Healthcheck database probe failed: {exc}")
+        database_status = "unavailable"
+    return {
+        "status": "ok",
+        "environment": settings.app_env,
+        "database": database_status,
+    }
 
 
 def require_user_id(x_user_id: str | None = Header(default=None, alias="X-User-Id")) -> str:
